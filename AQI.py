@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import datetime
 
-# --- ERROR HANDLING FOR ASSETS ---
 try:
     # 1. PAGE SETUP
     st.set_page_config(
@@ -12,30 +11,23 @@ try:
         layout="wide"
     )
 
-    # 2. STYLING (The Human-Touch UI)
+    # 2. STYLING
     st.markdown("""
         <style>
         .main { background-color: #f8fafc; }
         .stMetric { background-color: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .dev-box {
-            background: #1e293b;
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 20px;
+            background: #1e293b; color: white; padding: 20px;
+            border-radius: 15px; text-align: center; margin-bottom: 20px;
         }
         .advice-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 5px solid #3b82f6;
-            margin: 10px 0;
+            background: #fff; padding: 20px; border-radius: 12px;
+            border-left: 5px solid #3b82f6; margin: 10px 0;
         }
         </style>
         """, unsafe_allow_html=True)
 
-    # 3. SIDEBAR (Developer Profile: Aryan Kumar Thakur)
+    # 3. SIDEBAR
     with st.sidebar:
         st.markdown(f"""
             <div class="dev-box">
@@ -46,25 +38,40 @@ try:
         """, unsafe_allow_html=True)
         
         st.write("### 📍 Location Settings")
-        selected_city = st.selectbox(
-            "Select City",
-            ["New Delhi", "Mumbai", "Bangalore", "Kolkata", "Chennai", "Hyderabad", "Pune"]
-        )
         
-        st.markdown("---")
-        st.write("### 🛠️ Tech Used")
-        st.code("Python\nStreamlit\nPandas\nNumPy")
+        # 28 States and their Capitals
+        locations = {
+            "Andhra Pradesh": "Amaravati", "Arunachal Pradesh": "Itanagar", "Assam": "Dispur",
+            "Bihar": "Patna", "Chhattisgarh": "Raipur", "Goa": "Panaji", "Gujarat": "Gandhinagar",
+            "Haryana": "Chandigarh", "Himachal Pradesh": "Shimla", "Jharkhand": "Ranchi",
+            "Karnataka": "Bengaluru", "Kerala": "Thiruvananthapuram", "Madhya Pradesh": "Bhopal",
+            "Maharashtra": "Mumbai", "Manipur": "Imphal", "Meghalaya": "Shillong",
+            "Mizoram": "Aizawl", "Nagaland": "Kohima", "Odisha": "Bhubaneswar",
+            "Punjab": "Chandigarh", "Rajasthan": "Jaipur", "Sikkim": "Gangtok",
+            "Tamil Nadu": "Chennai", "Telangana": "Hyderabad", "Tripura": "Agartala",
+            "Uttar Pradesh": "Lucknow", "Uttarakhand": "Dehradun", "West Bengal": "Kolkata"
+        }
 
-    # 4. DATA LOGIC
+        selected_state = st.selectbox("Select State", sorted(locations.keys()))
+        selected_city = locations[selected_state]
+        
+        st.info(f"Showing data for capital: **{selected_city}**")
+        st.markdown("---")
+        st.code("Python\nStreamlit\nPandas")
+
+    # 4. DATA LOGIC (Region-based base AQI)
     def get_data(city):
         np.random.seed(sum(ord(c) for c in city))
-        base_aqi = {"New Delhi": 320, "Mumbai": 140, "Bangalore": 60, "Kolkata": 210}.get(city, 100)
-        val = int(base_aqi + np.random.randint(-30, 30))
+        # Logic to simulate higher AQI for Northern/Industrial capitals
+        high_aqi_cities = ["New Delhi", "Patna", "Lucknow", "Kolkata", "Chandigarh"]
+        base_aqi = 250 if city in high_aqi_cities else 80
+        
+        val = int(base_aqi + np.random.randint(-40, 60))
         return {
-            "aqi": val,
-            "pm25": int(val * 0.6),
-            "temp": np.random.randint(20, 35),
-            "humidity": np.random.randint(40, 80)
+            "aqi": max(10, val), # Ensure it's not negative
+            "pm25": int(val * 0.65),
+            "temp": np.random.randint(15, 38),
+            "humidity": np.random.randint(30, 90)
         }
 
     def get_status(aqi):
@@ -78,11 +85,10 @@ try:
     data = get_data(selected_city)
     label, color, note = get_status(data['aqi'])
 
-    st.title(f"🌬️ {selected_city} Air Quality")
-    st.markdown(f"**Built by Aryan Kumar Thakur** | {datetime.datetime.now().strftime('%H:%M %p')}")
+    st.title(f"🌬️ {selected_city}, {selected_state}")
+    st.markdown(f"**Developed by Aryan Kumar Thakur** | {datetime.datetime.now().strftime('%d %b %Y, %H:%M %p')}")
 
     col1, col2, col3 = st.columns([2, 1, 1])
-
     with col1:
         st.markdown(f"""
             <div style="background:{color}; padding:40px; border-radius:20px; color:white;">
@@ -103,16 +109,12 @@ try:
         st.metric("Pollutant", "PM2.5", delta="Primary")
 
     # 6. GRAPH
-    st.write("### 📈 24-Hour Trend")
-    chart_data = pd.DataFrame(
-        np.random.randn(24, 1) * 10 + data['aqi'],
-        columns=['AQI']
-    )
+    st.write(f"### 📈 24-Hour AQI Trend for {selected_city}")
+    chart_data = pd.DataFrame(np.random.randn(24, 1) * 15 + data['aqi'], columns=['AQI'])
     st.area_chart(chart_data, color=color)
 
     # 7. FOOTER
     st.markdown(f"<div style='text-align:center; margin-top:50px; color:#94a3b8;'>Made with ❤️ by Aryan Kumar Thakur</div>", unsafe_allow_html=True)
 
 except Exception as e:
-    st.error(f"An error occurred: {e}")
-    st.info("Try running: pip install streamlit pandas numpy")
+    st.error(f"Something went wrong: {e}")
